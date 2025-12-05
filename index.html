@@ -292,7 +292,7 @@
         
         <!-- Upload Quiz Section -->
         <div class="section">
-            <h2 class="section-title">🎓 Upload New Quiz</h2>
+            <h2 class="section-title">📚 Upload New Quiz</h2>
             <input type="text" id="quizTitle" placeholder="Enter Quiz Title">
             <div class="file-input-wrapper">
                 <input type="file" id="excelFile" accept=".xlsx,.xls">
@@ -389,12 +389,30 @@
         let currentUser = null;
         let generatedQuizData = [];
         
+        // ========================================
+        // NEW: iOS App Bridge - Send Auth Token
+        // ========================================
+        function sendAuthTokenToiOS() {
+            if (currentUser && window.webkit?.messageHandlers?.authToken) {
+                currentUser.getIdToken().then(token => {
+                    console.log('📱 Sending token to iOS app');
+                    window.webkit.messageHandlers.authToken.postMessage(token);
+                }).catch(err => {
+                    console.error('Failed to get token:', err);
+                });
+            }
+        }
+        
         // Auth State Observer
         auth.onAuthStateChanged(user => {
             currentUser = user;
             updateAuthStatus();
             if (user) {
                 loadQuizLibrary();
+                sendAuthTokenToiOS(); // Send token to iOS
+                
+                // Keep sending token periodically
+                setInterval(sendAuthTokenToiOS, 2000);
             }
         });
         
@@ -459,6 +477,13 @@
             }
             
             try {
+                // Parse Excel to count questions
+                const buffer = await file.arrayBuffer();
+                const workbook = XLSX.read(buffer);
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                const questionCount = rows.length - 1; // Subtract header row
+                
                 const storageRef = storage.ref(`quizzes/${currentUser.uid}/${Date.now()}_${file.name}`);
                 await storageRef.put(file);
                 const downloadURL = await storageRef.getDownloadURL();
@@ -468,6 +493,7 @@
                     userId: currentUser.uid,
                     fileUrl: downloadURL,
                     fileName: file.name,
+                    questionCount: questionCount,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 
@@ -503,13 +529,48 @@
                     const div = document.createElement('div');
                     div.className = 'quiz-item';
                     div.innerHTML = `
-                        <button class="btn-primary" style="width:auto; flex:1;" onclick="window.open('${quiz.fileUrl}', '_blank')">${quiz.title}</button>
+                        <button class="btn-primary" style="width:auto; flex:1;" onclick="selectQuizForApp('${quiz.fileUrl}', '${quiz.title.replace(/'/g, "\\'")}')">
+                            ${quiz.title}
+                        </button>
                         <button class="btn-danger" onclick="deleteQuiz('${doc.id}')">Delete</button>
                     `;
                     libraryDiv.appendChild(div);
                 });
             } catch (error) {
                 libraryDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+        
+        // ========================================
+        // NEW: Send Quiz Selection to iOS App
+        // ========================================
+        function selectQuizForApp(fileUrl, title) {
+            console.log('📱 Quiz selected for iOS app:', title);
+            console.log('📱 File URL:', fileUrl);
+            
+            // Check if running in iOS WebView
+            console.log('🔍 Checking for iOS bridge...');
+            console.log('🔍 window.webkit exists:', typeof window.webkit !== 'undefined');
+            console.log('🔍 messageHandlers exists:', typeof window.webkit?.messageHandlers !== 'undefined');
+            console.log('🔍 quizSelected handler exists:', typeof window.webkit?.messageHandlers?.quizSelected !== 'undefined');
+            
+            // If running in iOS WebView, send to app
+            if (window.webkit?.messageHandlers?.quizSelected) {
+                const quizInfo = {
+                    url: fileUrl,
+                    title: title
+                };
+                console.log('✅ iOS bridge found! Sending quiz info:', quizInfo);
+                try {
+                    window.webkit.messageHandlers.quizSelected.postMessage(quizInfo);
+                    console.log('✅ Message sent successfully');
+                } catch (error) {
+                    console.error('❌ Error sending message:', error);
+                }
+            } else {
+                // Otherwise, open in new tab (web browser)
+                console.log('🌐 Not in iOS app, opening in new tab');
+                window.open(fileUrl, '_blank');
             }
         }
         
@@ -658,6 +719,7 @@
                     userId: currentUser.uid,
                     fileUrl: downloadURL,
                     fileName: fileName,
+                    questionCount: editedQuestions.length,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                     aiGenerated: true
                 });
