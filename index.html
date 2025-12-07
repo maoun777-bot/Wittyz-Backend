@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WITTYZ Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-image: url('Backend-Background.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .logo-container {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        
+        .logo-container img {
+            max-width: 300px;
+            height: auto;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .nav-links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .nav-links a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+            padding: 8px 8px;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+        
+        .nav-links a:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        .section {
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .section:last-child {
+            border-bottom: none;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            color: #555;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        input[type="email"],
+        input[type="password"],
+        input[type="text"],
+        input[type="number"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+            font-family: inherit;
+        }
+        
+        button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 10px;
+        }
+        
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,123,255,0.3);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #218838;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+            width: auto;
+            padding: 10px 20px;
+            font-size: 14px;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        .status-message {
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            display: none;
+        }
+        
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .quiz-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .file-input-wrapper {
+            position: relative;
+            margin-bottom: 15px;
+        }
+        
+        input[type="file"] {
+            padding: 10px;
+            border: 2px dashed #e0e0e0;
+            background: #f9f9f9;
+        }
+        
+        .ai-button-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .btn-ai {
+            background: linear-gradient(135deg, #10a37f 0%, #0d8c6e 100%);
+            color: white;
+            flex: 1;
+        }
+        
+        .btn-ai:hover {
+            background: linear-gradient(135deg, #0d8c6e 0%, #0a7459 100%);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        
+        .modal-content {
+            background: white;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 30px;
+            border-radius: 12px;
+            position: relative;
+        }
+        
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 28px;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        .close-modal:hover {
+            color: #333;
+        }
+        
+        .question-row {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .question-row label {
+            display: block;
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        .question-row input {
+            margin-bottom: 8px;
+        }
+        
+        .answer-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Hide background and logo when running in iOS app */
+.in-ios-app body {
+            background: none !important;
+            background-color: transparent !important;
+        }
+
+        .in-ios-app .logo-container {
+            display: none !important;
+        }
+
+        .in-ios-app .container {
+            background: rgba(255, 255, 255, 0.95) !important;
+            margin-top: 20px !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="logo-container">
+        <img src="Wittyz-Logo.png" alt="Wittyz Logo">
+    </div>
+    
+    <div class="container">
+        <h1>Dashboard</h1>
+        
+        <div class="nav-links">
+            <a href="how-to-play.html">How to Play</a>
+        </div>
+        
+        <!-- Auth Section -->
+        <div class="section">
+            <input type="email" id="emailInput" placeholder="Email Address">
+            <input type="password" id="passwordInput" placeholder="Password">
+            <button class="btn-primary" onclick="createAccount()">Create Account</button>
+            <button class="btn-primary" onclick="signIn()">Sign In</button>
+            <button class="btn-secondary" onclick="signOut()">Sign Out</button>
+            <div id="authStatus" class="status-message"></div>
+        </div>
+        
+        <!-- Upload Quiz Section -->
+        <div class="section">
+            <h2 class="section-title">📚 Upload New Quiz</h2>
+            <input type="text" id="quizTitle" placeholder="Enter Quiz Title">
+            <div class="file-input-wrapper">
+                <input type="file" id="excelFile" accept=".xlsx,.xls">
+            </div>
+            <button class="btn-primary" onclick="uploadExcelFile()">Upload Excel File</button>
+            
+            <div class="ai-button-container">
+                <button class="btn-ai" onclick="openAIModal()">✨ Create a Quiz with AI</button>
+              <div id="uploadStatus" class="status-message"></div>
+        </div>
+        
+        <!-- Quiz Library Section -->
+        <div class="section">
+            <h2 class="section-title">📚 Your Quiz Library</h2>
+            <div id="quizLibrary"></div>
+        </div>
+    </div>
+    
+    <!-- AI Quiz Creation Modal -->
+    <div id="aiModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeAIModal()">&times;</span>
+            <h2>✨ Create Quiz with AI</h2>
+            
+            <div id="aiFormSection">
+                <input type="text" id="aiQuizTitle" placeholder="Quiz Title">
+                
+                <label for="aiLanguage">Language:</label>
+                <select id="aiLanguage">
+                    <option value="English">English</option>
+                    <option value="Spanish">Spanish</option>
+                    <option value="French">French</option>
+                    <option value="German">German</option>
+                    <option value="Italian">Italian</option>
+                    <option value="Portuguese">Portuguese</option>
+                    <option value="Chinese">Chinese</option>
+                    <option value="Japanese">Japanese</option>
+                    <option value="Korean">Korean</option>
+                    <option value="Arabic">Arabic</option>
+                    <option value="Russian">Russian</option>
+                    <option value="Hindi">Hindi</option>
+                    <option value="Dutch">Dutch</option>
+                    <option value="Polish">Polish</option>
+                    <option value="Turkish">Turkish</option>
+                </select>
+                
+                <label for="aiNumQuestions">Number of Questions:</label>
+                <input type="number" id="aiNumQuestions" min="1" max="100" value="10">
+                
+                <label for="aiDescription">Quiz Description:</label>
+                <textarea id="aiDescription" placeholder="Describe the type of questions and subject. Use details like crossword puzzle style, Jeopardy Style, science & math, sport, riddles, middle school students level, etc..."></textarea>
+                
+                <button class="btn-success" onclick="generateQuiz()">Generate Quiz</button>
+            </div>
+            
+            <div id="aiLoadingSection" class="loading" style="display:none;">
+                <div class="spinner"></div>
+                <p>Generating your quiz with AI...</p>
+            </div>
+            
+            <div id="aiEditSection" style="display:none;">
+                <h3>Edit Your Quiz</h3>
+                <div id="questionsContainer"></div>
+                <button class="btn-success" onclick="uploadAIQuiz()">Upload Quiz</button>
+            </div>
+        </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 40px; padding: 20px; border-top: 2px solid rgba(255,255,255,0.3);">
+        <p style="color: #7d7d7d; font-size: 14px; margin: 0;">© 2025 Michel Aoun. WITTYZ™ - All rights reserved.</p>
+        <p style="color: #7d7d7d; font-size: 14px; margin: 0;">Patent Pending</p>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBEhJPMMmD-JizrMuFEwaAOnZmohHfJE88",
+            authDomain: "tizzup-7019e.firebaseapp.com",
+            projectId: "tizzup-7019e",
+            storageBucket: "tizzup-7019e.firebasestorage.app",
+            messagingSenderId: "836394842308",
+            appId: "1:836394842308:web:4cc990952da007cb53f191"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const storage = firebase.storage();
+        const db = firebase.firestore();
+        
+        let currentUser = null;
+        let generatedQuizData = [];
+        
+        function sendAuthTokenToiOS() {
+            if (currentUser && window.webkit?.messageHandlers?.authToken) {
+                currentUser.getIdToken().then(token => {
+                    console.log('📱 Sending token to iOS app');
+                    window.webkit.messageHandlers.authToken.postMessage(token);
+                }).catch(err => {
+                    console.error('Failed to get token:', err);
+                });
+            }
+        }
+        
+        auth.onAuthStateChanged(user => {
+            currentUser = user;
+            updateAuthStatus();
+            if (user) {
+                loadQuizLibrary();
+                sendAuthTokenToiOS();
+                setInterval(sendAuthTokenToiOS, 2000);
+            }
+        });
+        
+        function updateAuthStatus() {
+            const statusDiv = document.getElementById('authStatus');
+            if (currentUser) {
+                statusDiv.textContent = `✅ Signed in as ${currentUser.email}`;
+                statusDiv.className = 'status-message status-success';
+                statusDiv.style.display = 'block';
+            } else {
+                statusDiv.textContent = 'Not signed in';
+                statusDiv.className = 'status-message status-error';
+                statusDiv.style.display = 'block';
+            }
+        }
+        
+        async function createAccount() {
+            const email = document.getElementById('emailInput').value;
+            const password = document.getElementById('passwordInput').value;
+            try {
+                await auth.createUserWithEmailAndPassword(email, password);
+                showMessage('authStatus', 'Account created successfully!', 'success');
+            } catch (error) {
+                showMessage('authStatus', error.message, 'error');
+            }
+        }
+        
+        async function signIn() {
+            const email = document.getElementById('emailInput').value;
+            const password = document.getElementById('passwordInput').value;
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+                showMessage('authStatus', 'Signed in successfully!', 'success');
+            } catch (error) {
+                showMessage('authStatus', error.message, 'error');
+            }
+        }
+        
+        async function signOut() {
+            try {
+                await auth.signOut();
+                showMessage('authStatus', 'Signed out successfully!', 'success');
+                document.getElementById('quizLibrary').innerHTML = '';
+            } catch (error) {
+                showMessage('authStatus', error.message, 'error');
+            }
+        }
+        
+        async function uploadExcelFile() {
+            if (!currentUser) {
+                showMessage('uploadStatus', 'Please sign in first', 'error');
+                return;
+            }
+            
+            const title = document.getElementById('quizTitle').value;
+            const fileInput = document.getElementById('excelFile');
+            const file = fileInput.files[0];
+            
+            if (!title || !file) {
+                showMessage('uploadStatus', 'Please enter a title and select a file', 'error');
+                return;
+            }
+            
+            try {
+                const buffer = await file.arrayBuffer();
+                const workbook = XLSX.read(buffer);
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                const questionCount = rows.length - 1;
+                
+                const storageRef = storage.ref(`quizzes/${currentUser.uid}/${Date.now()}_${file.name}`);
+                await storageRef.put(file);
+                const downloadURL = await storageRef.getDownloadURL();
+                
+                await db.collection('quizzes').add({
+                    title: title,
+                    userId: currentUser.uid,
+                    fileUrl: downloadURL,
+                    fileName: file.name,
+                    questionCount: questionCount,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                showMessage('uploadStatus', 'Quiz uploaded successfully!', 'success');
+                document.getElementById('quizTitle').value = '';
+                document.getElementById('excelFile').value = '';
+                loadQuizLibrary();
+            } catch (error) {
+                showMessage('uploadStatus', error.message, 'error');
+            }
+        }
+        
+        async function loadQuizLibrary() {
+            if (!currentUser) return;
+            
+            const libraryDiv = document.getElementById('quizLibrary');
+            libraryDiv.innerHTML = '<p>Loading...</p>';
+            
+            try {
+                const snapshot = await db.collection('quizzes')
+                    .where('userId', '==', currentUser.uid)
+                    .orderBy('createdAt', 'desc')
+                    .get();
+                
+                if (snapshot.empty) {
+                    libraryDiv.innerHTML = '<p>No quizzes yet</p>';
+                    return;
+                }
+                
+                libraryDiv.innerHTML = '';
+                snapshot.forEach(doc => {
+                    const quiz = doc.data();
+                    const div = document.createElement('div');
+                    div.className = 'quiz-item';
+                    div.innerHTML = `
+                        <button class="btn-primary" style="width:auto; flex:1;" onclick="selectQuizForApp('${quiz.fileUrl}', '${quiz.title.replace(/'/g, "\\'")}')">
+                            ${quiz.title}
+                        </button>
+                        <button class="btn-danger" onclick="deleteQuiz('${doc.id}')">Delete</button>
+                    `;
+                    libraryDiv.appendChild(div);
+                });
+            } catch (error) {
+                libraryDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+        
+        function selectQuizForApp(fileUrl, title) {
+            console.log('📱 Quiz selected for iOS app:', title);
+            console.log('📱 File URL:', fileUrl);
+            console.log('🔍 window.webkit exists:', typeof window.webkit !== 'undefined');
+            
+            if (window.webkit?.messageHandlers?.quizSelected) {
+                const quizInfo = { url: fileUrl, title: title };
+                console.log('✅ Sending to iOS:', quizInfo);
+                try {
+                    window.webkit.messageHandlers.quizSelected.postMessage(quizInfo);
+                    console.log('✅ Message sent successfully');
+                } catch (error) {
+                    console.error('❌ Error sending message:', error);
+                }
+            } else {
+                console.log('🌐 Not in iOS app, opening in new tab');
+                window.open(fileUrl, '_blank');
+            }
+        }
+        
+        async function deleteQuiz(quizId) {
+            if (!confirm('Are you sure you want to delete this quiz?')) return;
+            try {
+                await db.collection('quizzes').doc(quizId).delete();
+                loadQuizLibrary();
+            } catch (error) {
+                alert('Error deleting quiz: ' + error.message);
+            }
+        }
+        
+        function openAIModal() {
+            if (!currentUser) {
+                showMessage('uploadStatus', 'Please sign in first', 'error');
+                return;
+            }
+            document.getElementById('aiModal').style.display = 'block';
+        }
+        
+        function closeAIModal() {
+            document.getElementById('aiModal').style.display = 'none';
+            document.getElementById('aiFormSection').style.display = 'block';
+            document.getElementById('aiLoadingSection').style.display = 'none';
+            document.getElementById('aiEditSection').style.display = 'none';
+        }
+        
+        async function generateQuiz() {
+            const title = document.getElementById('aiQuizTitle').value;
+            const language = document.getElementById('aiLanguage').value;
+            const numQuestions = document.getElementById('aiNumQuestions').value;
+            const description = document.getElementById('aiDescription').value;
+            
+            if (!title || !numQuestions || !description) {
+                alert('Please fill in all fields');
+                return;
+            }
+            
+            document.getElementById('aiFormSection').style.display = 'none';
+            document.getElementById('aiLoadingSection').style.display = 'block';
+            
+            try {
+                const response = await fetch('/.netlify/functions/generate-quiz', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, language, numQuestions: parseInt(numQuestions), description })
+                });
+                
+                if (!response.ok) throw new Error('Failed to generate quiz');
+                
+                const data = await response.json();
+                generatedQuizData = data.questions;
+                displayEditableQuiz();
+            } catch (error) {
+                alert('Error generating quiz: ' + error.message);
+                closeAIModal();
+            }
+        }
+        
+        function displayEditableQuiz() {
+            document.getElementById('aiLoadingSection').style.display = 'none';
+            document.getElementById('aiEditSection').style.display = 'block';
+            
+            const container = document.getElementById('questionsContainer');
+            container.innerHTML = '';
+            
+            generatedQuizData.forEach((q, index) => {
+                const div = document.createElement('div');
+                div.className = 'question-row';
+                div.innerHTML = `
+                    <label>Question ${index + 1}:</label>
+                    <input type="text" id="q${index}" value="${q.question}">
+                    <div class="answer-group">
+                        <div><label>Answer 1:</label><input type="text" id="q${index}a1" value="${q.answer1}"></div>
+                        <div><label>Answer 2:</label><input type="text" id="q${index}a2" value="${q.answer2}"></div>
+                        <div><label>Answer 3:</label><input type="text" id="q${index}a3" value="${q.answer3}"></div>
+                        <div><label>Answer 4:</label><input type="text" id="q${index}a4" value="${q.answer4}"></div>
+                    </div>
+                    <label>Correct Answer (1-4):</label>
+                    <input type="number" id="q${index}correct" min="1" max="4" value="${q.correctAnswer}">
+                `;
+                container.appendChild(div);
+            });
+        }
+        
+        async function uploadAIQuiz() {
+            const editedQuestions = [];
+            for (let i = 0; i < generatedQuizData.length; i++) {
+                editedQuestions.push({
+                    question: document.getElementById(`q${i}`).value,
+                    answer1: document.getElementById(`q${i}a1`).value,
+                    answer2: document.getElementById(`q${i}a2`).value,
+                    answer3: document.getElementById(`q${i}a3`).value,
+                    answer4: document.getElementById(`q${i}a4`).value,
+                    correctAnswer: parseInt(document.getElementById(`q${i}correct`).value)
+                });
+            }
+            
+            const ws_data = [['Question', 'Answer 1', 'Answer 2', 'Answer 3', 'Answer 4', 'Correct Answer']];
+            editedQuestions.forEach(q => {
+                ws_data.push([q.question, q.answer1, q.answer2, q.answer3, q.answer4, q.correctAnswer]);
+            });
+            
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(ws_data);
+            XLSX.utils.book_append_sheet(wb, ws, 'Quiz');
+            
+            const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+            const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            
+            const title = document.getElementById('aiQuizTitle').value;
+            const fileName = `${title.replace(/[^a-z0-9]/gi, '_')}_${Date.now()}.xlsx`;
+            const storageRef = storage.ref(`quizzes/${currentUser.uid}/${fileName}`);
+            
+            try {
+                await storageRef.put(blob);
+                const downloadURL = await storageRef.getDownloadURL();
+                
+                await db.collection('quizzes').add({
+                    title: title,
+                    userId: currentUser.uid,
+                    fileUrl: downloadURL,
+                    fileName: fileName,
+                    questionCount: editedQuestions.length,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    aiGenerated: true
+                });
+                
+                alert('Quiz uploaded successfully!');
+                closeAIModal();
+                loadQuizLibrary();
+            } catch (error) {
+                alert('Error uploading quiz: ' + error.message);
+            }
+        }
+        
+        function showMessage(elementId, message, type) {
+            const el = document.getElementById(elementId);
+            el.textContent = message;
+            el.className = `status-message status-${type}`;
+            el.style.display = 'block';
+            setTimeout(() => { el.style.display = 'none'; }, 5000);
+        }
+        
+        function showDashboard() {
+            window.location.href = 'index.html';
+        }
+        // Detect if running in iOS WebView
+        function detectIOSApp() {
+            const isIOS = window.webkit && window.webkit.messageHandlers;
+            if (isIOS) {
+                console.log('🍎 Running in iOS app - hiding background/logo');
+                document.documentElement.classList.add('in-ios-app');
+            } else {
+                console.log('🌐 Running in web browser - showing full design');
+            }
+}
+
+// Run on page load
+detectIOSApp();
+    </script>
+</body>
+</html>
