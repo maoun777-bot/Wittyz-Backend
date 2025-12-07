@@ -1,0 +1,16 @@
+{
+  "name": "wittyz-backend",
+  "version": "1.0.0",
+  "description": "Backend for Wittyz iOS quiz app",
+  "scripts": {
+    "dev": "netlify dev"
+  },
+  "dependencies": {
+    "firebase-admin": "^11.11.0",
+    "node-fetch": "^2.6.12",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "netlify-cli": "^16.0.0"
+  }
+}
