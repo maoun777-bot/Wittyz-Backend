@@ -1,5 +1,18 @@
 [build]
+  command = "# No build command needed for static site"
+  publish = "."
   functions = "netlify/functions"
 
 [functions]
+  # Use esbuild for faster function bundling
   node_bundler = "esbuild"
+  
+  # Set function timeout (default is 10 seconds, max is 26 seconds on free tier)
+  # AI generation might take 15-20 seconds
+  [functions."generate-quiz"]
+    timeout = 26
+
+[[redirects]]
+  from = "/.netlify/functions/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
