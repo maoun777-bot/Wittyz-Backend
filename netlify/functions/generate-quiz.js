@@ -1,4 +1,4 @@
-// File: netlify/functions/generate-quiz.js
+const Anthropic = require('@anthropic-ai/sdk');
 
 exports.handler = async (event, context) => {
   // Only allow POST requests
@@ -10,127 +10,126 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { title, language, numQuestions, description } = JSON.parse(event.body);
+    // Parse the request body
+    const { title, language, questionCount, description } = JSON.parse(event.body);
 
-    // Validate input
-    if (!title || !language || !numQuestions || !description) {
+    console.log('Received quiz generation request:', { title, language, questionCount });
+
+    // Validate inputs
+    if (!title || !language || !questionCount || !description) {
       return {
         statusCode: 400,
         body: JSON.stringify({ error: 'Missing required fields' })
       };
     }
 
-    // Construct the prompt for Claude
-    const prompt = `Create a quiz with exactly ${numQuestions} multiple choice questions based on the following specifications:
-
-Title: ${title}
-Language: ${language}
-Description: ${description}
-
-Requirements:
-- Generate exactly ${numQuestions} questions
-- Each question must have exactly 4 answer choices
-- Mark one answer as correct (use a number 1-4)
-- The correct answer position should be randomized among the 4 choices
-- Questions should match the style and difficulty described
-- All content must be in ${language}
-
-Return ONLY a valid JSON array with this exact structure (no markdown, no additional text, no explanation):
-[
-  {
-    "question": "Question text here",
-    "answer1": "First choice",
-    "answer2": "Second choice", 
-    "answer3": "Third choice",
-    "answer4": "Fourth choice",
-    "correctAnswer": 2
-  }
-]
-
-Important: Return ONLY the JSON array, nothing else.`;
-
-    // Call Anthropic Claude API
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-3-5-haiku-20241022', // Fast and cost-effective
-        max_tokens: 4096,
-        messages: [
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        temperature: 0.7
-      })
+    // Initialize Anthropic client
+    const anthropic = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      console.error('Claude API Error:', error);
-      return {
-        statusCode: response.status,
-        body: JSON.stringify({ error: 'Failed to generate quiz', details: error })
-      };
+    // Create the prompt for Claude
+    const prompt = `Create a ${language} quiz with ${questionCount} multiple-choice questions about: ${description}
+
+Title: ${title}
+
+CRITICAL: Return ONLY valid JSON with this EXACT structure (no markdown, no explanation):
+{
+  "title": "${title}",
+  "questions": [
+    {
+      "text": "Question text",
+      "answers": ["Answer 1", "Answer 2", "Answer 3", "Answer 4"],
+      "correct": 1
+    }
+  ]
+}
+
+Requirements:
+- Each question: 4 answer choices
+- Correct answer: number 1-4
+- Keep questions concise but clear
+- Vary difficulty levels
+- Make distractors plausible`;
+
+    // Call Claude API
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 8000,
+      temperature: 1,
+      messages: [{
+        role: 'user',
+        content: prompt
+      }]
+    });
+
+    // Extract the response text
+    let responseText = '';
+    for (const block of message.content) {
+      if (block.type === 'text') {
+        responseText += block.text;
+      }
     }
 
-    const data = await response.json();
-    
-    // Extract text from Claude's response
-    let quizContent = data.content[0].text.trim();
+    console.log('Raw AI response:', responseText.substring(0, 200));
 
-    // Remove markdown code blocks if present
-    quizContent = quizContent.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+    // Clean up the response - remove markdown code blocks if present
+    let cleanedResponse = responseText.trim();
+    if (cleanedResponse.startsWith('```json')) {
+      cleanedResponse = cleanedResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+    } else if (cleanedResponse.startsWith('```')) {
+      cleanedResponse = cleanedResponse.replace(/```\n?/g, '');
+    }
 
     // Parse the JSON response
-    let questions;
-    try {
-      questions = JSON.parse(quizContent);
-    } catch (parseError) {
-      console.error('Failed to parse Claude response:', quizContent);
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ 
-          error: 'Failed to parse quiz data',
-          details: parseError.message,
-          rawContent: quizContent
-        })
-      };
+    const quizData = JSON.parse(cleanedResponse);
+
+    // Validate the quiz structure
+    if (!quizData.questions || !Array.isArray(quizData.questions)) {
+      throw new Error('Invalid quiz structure: missing questions array');
     }
 
-    // Validate the response structure
-    if (!Array.isArray(questions) || questions.length === 0) {
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ error: 'Invalid quiz format received from AI' })
-      };
+    if (quizData.questions.length !== parseInt(questionCount)) {
+      console.warn(`Expected ${questionCount} questions but got ${quizData.questions.length}`);
     }
 
-    // Return the generated quiz
+    // Validate each question
+    for (let i = 0; i < quizData.questions.length; i++) {
+      const q = quizData.questions[i];
+      if (!q.text || !q.answers || !Array.isArray(q.answers) || q.answers.length !== 4 || !q.correct) {
+        throw new Error(`Invalid question structure at index ${i}`);
+      }
+      if (q.correct < 1 || q.correct > 4) {
+        throw new Error(`Invalid correct answer index at question ${i}: ${q.correct}`);
+      }
+    }
+
+    console.log('Quiz generated successfully:', quizData.questions.length, 'questions');
+
+    // Return the quiz data
     return {
       statusCode: 200,
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS'
       },
-      body: JSON.stringify({
-        success: true,
-        questions: questions
-      })
+      body: JSON.stringify(quizData)
     };
 
   } catch (error) {
-    console.error('Function error:', error);
+    console.error('Error generating quiz:', error);
+    
     return {
       statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
       body: JSON.stringify({ 
-        error: 'Internal server error',
-        message: error.message 
+        error: 'Failed to generate quiz',
+        details: error.message 
       })
     };
   }
