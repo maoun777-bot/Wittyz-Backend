@@ -336,7 +336,7 @@
         <div class="section">
             <input type="email" id="emailInput" placeholder="Email Address">
             <input type="password" id="passwordInput" placeholder="Password">
-            <button class="btn-primary" onclick="createAccount()">Create Account</button>
+            <button class="btn-primary" onclick="Account()"> Account</button>
             <button class="btn-primary" onclick="signIn()">Sign In</button>
             <button class="btn-secondary" onclick="signOut()">Sign Out</button>
             <div id="authStatus" class="status-message"></div>
@@ -689,77 +689,67 @@
                 container.appendChild(div);
             });
         }
-        
-        async function uploadAIQuiz() {
-            const editedQuestions = [];
-            for (let i = 0; i < generatedQuizData.length; i++) {
-                editedQuestions.push({
-                    question: document.getElementById(`q${i}`).value,
-                    answer1: document.getElementById(`q${i}a1`).value,
-                    answer2: document.getElementById(`q${i}a2`).value,
-                    answer3: document.getElementById(`q${i}a3`).value,
-                    answer4: document.getElementById(`q${i}a4`).value,
-                    correctAnswer: parseInt(document.getElementById(`q${i}correct`).value)
-                });
-            }
-            
-            // Create Excel file with MINIMAL metadata for CoreXLSX compatibility
-const ws_data = [['Question', 'Answer 1', 'Answer 2', 'Answer 3', 'Answer 4', 'Correct Answer']];
-editedQuestions.forEach(q => {
-    ws_data.push([q.question, q.answer1, q.answer2, q.answer3, q.answer4, q.correctAnswer]);
-});
-
-const wb = XLSX.utils.book_new();
-
-// Remove all properties that cause metadata issues
-delete wb.Props;
-delete wb.Custprops;
-
-const ws = XLSX.utils.aoa_to_sheet(ws_data);
-
-// Remove worksheet metadata
-delete ws['!margins'];
-delete ws['!protect'];
-delete ws['!autofilter'];
-
-XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
-
-// Write with minimal features for CoreXLSX compatibility
-const wbout = XLSX.write(wb, { 
-    bookType: 'xlsx', 
-    type: 'array',
-    bookSST: false,        // No shared string table
-    cellStyles: false,     // No cell styles
-    compression: false     // No compression
-});
-
-const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-
-// Upload to Firebase
-const title = document.getElementById('aiQuizTitle').value;
-const fileName = `${title.replace(/[^a-z0-9]/gi, '_')}_${Date.now()}.xlsx`;
-const storageRef = storage.ref(`quizzes/${currentUser.uid}/${fileName}`);
-
-try {
-    await storageRef.put(blob);
-    const downloadURL = await storageRef.getDownloadURL();
+async function uploadAIQuiz() {
+    const editedQuestions = [];
+    for (let i = 0; i < generatedQuizData.length; i++) {
+        editedQuestions.push({
+            question: document.getElementById(`q${i}`).value,
+            answer1: document.getElementById(`q${i}a1`).value,
+            answer2: document.getElementById(`q${i}a2`).value,
+            answer3: document.getElementById(`q${i}a3`).value,
+            answer4: document.getElementById(`q${i}a4`).value,
+            correctAnswer: parseInt(document.getElementById(`q${i}correct`).value)
+        });
+    }
     
-    await db.collection('quizzes').add({
-        title: title,
-        userId: currentUser.uid,
-        fileUrl: downloadURL,
-        fileName: fileName,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        aiGenerated: true
+    // Create CSV content (simple and reliable)
+    let csvContent = 'Question,Answer 1,Answer 2,Answer 3,Answer 4,Correct Answer\n';
+    
+    editedQuestions.forEach(q => {
+        // Escape quotes and wrap fields in quotes for CSV safety
+        const escapeCSV = (field) => {
+            field = String(field).replace(/"/g, '""');
+            return `"${field}"`;
+        };
+        
+        csvContent += [
+            escapeCSV(q.question),
+            escapeCSV(q.answer1),
+            escapeCSV(q.answer2),
+            escapeCSV(q.answer3),
+            escapeCSV(q.answer4),
+            q.correctAnswer
+        ].join(',') + '\n';
     });
     
-    alert('Quiz uploaded successfully!');
-    closeAIModal();
-    loadQuizLibrary();
-} catch (error) {
-    alert('Error uploading quiz: ' + error.message);
+    // Create CSV blob
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    
+    // Upload to Firebase
+    const title = document.getElementById('aiQuizTitle').value;
+    const fileName = `${title.replace(/[^a-z0-9]/gi, '_')}_${Date.now()}.csv`;
+    const storageRef = storage.ref(`quizzes/${currentUser.uid}/${fileName}`);
+    
+    try {
+        await storageRef.put(blob);
+        const downloadURL = await storageRef.getDownloadURL();
+        
+        await db.collection('quizzes').add({
+            title: title,
+            userId: currentUser.uid,
+            fileUrl: downloadURL,
+            fileName: fileName,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            aiGenerated: true
+        });
+        
+        alert('Quiz uploaded successfully!');
+        closeAIModal();
+        loadQuizLibrary();
+    } catch (error) {
+        alert('Error uploading quiz: ' + error.message);
+    }
 }
-        }
         
         function showMessage(elementId, message, type) {
             const el = document.getElementById(elementId);
