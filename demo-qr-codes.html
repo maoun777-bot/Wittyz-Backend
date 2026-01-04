@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WITTYZ QR Codes</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-image: url('Backend-Background.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+        }
+        
+        .logo-container {
+            text-align: center;
+            margin-bottom: 10px;
+            padding-top: 0px;
+        }
+        
+        .logo-container img {
+            max-width: 300px;
+            height: auto;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 10px auto 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+        
+        .nav-links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .nav-links a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+        
+        .nav-links a:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+        
+        h2 {
+            color: #555;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        p {
+            line-height: 1.6;
+            margin-bottom: 15px;
+            color: #444;
+        }
+        
+        ol {
+            margin-left: 30px;
+            margin-bottom: 15px;
+            line-height: 1.8;
+        }
+        
+        .color-legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #444;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+        
+        .legend-color.red { background: #e74c3c; }
+        .legend-color.blue { background: #3498db; }
+        .legend-color.green { background: #2ecc71; }
+        .legend-color.yellow { background: #f1c40f; }
+        
+        .question-nav {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            padding: 20px 0;
+        }
+        
+        .q-btn {
+            width: 44px;
+            height: 44px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            background: white;
+            color: #667eea;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .q-btn:hover {
+            background: #f0f0ff;
+        }
+        
+        .q-btn.active {
+            background: #667eea;
+            color: white;
+        }
+/* Container for the image and arrows */
+.sign-display {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    padding: 10px 0;
+    width: 100%;
+}
+
+.sign-card {
+    display: none;
+    background: white;
+    border-radius: 12px;
+    padding: 10px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+    max-width: 90%; /* Responsive width */
+}
+
+.sign-card.visible {
+    display: flex;
+    justify-content: center;
+}
+
+.sign-card img {
+    max-width: 100%;
+    max-height: 70vh; /* Prevents image from being taller than the screen */
+    height: auto;
+    object-fit: contain;
+}
+
+/* Navigation Arrow Styles */
+.nav-arrow {
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    font-size: 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.3s;
+    flex-shrink: 0;
+}
+
+.nav-arrow:hover {
+    background: #4a54e1;
+}
+
+/* Adjust for mobile to keep arrows visible */
+@media (max-width: 600px) {
+    .nav-arrow {
+        width: 40px;
+        height: 40px;
+        font-size: 18px;
+    }
+}
+        /* Hide background and logo when in iOS WebView */
+        @supports (-webkit-touch-callout: none) {
+            body {
+                background: none !important;
+                background-color: #f5f5f5 !important;
+            }
+    
+            .logo-container {
+                display: none !important;
+            }
+    
+            .container {
+                margin-top: 20px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="logo-container">
+        <img src="Wittyz-Logo.png" alt="Wittyz Logo">
+    </div>
+    
+    <div class="container">
+        <div class="nav-links">
+            <a href="index.html">Dashboard</a>
+            <a href="how-to-play.html">How to Play</a>
+        </div>
+        
+        <h1>WITTYZ QR Codes</h1>
+        <p class="subtitle">Use for App Testing</p>
+        
+        <h2>📱 How to Test the App</h2>
+        <ol>
+            <li>Open the <strong>WITTYZ app</strong> on your iPhone</li>
+            <li>Sign in and select a quiz</li>
+            <li>Start a game</li>
+            <li>Display this page on a <strong>second screen</strong> (computer, tablet, or another phone)</li>
+            <li>Select the question number below that matches your current question</li>
+            <li>Point your iPhone camera at the colored QR code matching your answer choice</li>
+            <li>The app will scan the code and advance to the next question</li>
+        </ol>
+        
+        <div class="color-legend">
+            <div class="legend-item"><div class="legend-color red"></div> Red = Answer 1</div>
+            <div class="legend-item"><div class="legend-color blue"></div> Blue = Answer 2</div>
+            <div class="legend-item"><div class="legend-color green"></div> Green = Answer 3</div>
+            <div class="legend-item"><div class="legend-color yellow"></div> Yellow = Answer 4</div>
+        </div>
+        
+        <div class="question-nav">
+            <button class="q-btn" onclick="showQuestion(1)">1</button>
+            <button class="q-btn" onclick="showQuestion(2)">2</button>
+            <button class="q-btn" onclick="showQuestion(3)">3</button>
+            <button class="q-btn" onclick="showQuestion(4)">4</button>
+            <button class="q-btn" onclick="showQuestion(5)">5</button>
+            <button class="q-btn" onclick="showQuestion(6)">6</button>
+            <button class="q-btn" onclick="showQuestion(7)">7</button>
+            <button class="q-btn" onclick="showQuestion(8)">8</button>
+            <button class="q-btn" onclick="showQuestion(9)">9</button>
+            <button class="q-btn" onclick="showQuestion(10)">10</button>
+            <button class="q-btn" onclick="showQuestion(11)">11</button>
+            <button class="q-btn" onclick="showQuestion(12)">12</button>
+        </div>
+        
+<div class="sign-display">
+    <button class="nav-arrow" onclick="changeQuestion(-1)">&#10094;</button>
+
+    <div id="image-container">
+        <div class="sign-card" data-question="1">
+            <img src="assets/QrCode_Signs-Nmbrs_on_top1.jpg" alt="Question 1 QR Codes">
+        </div>
+        <div class="sign-card" data-question="2">
+            <img src="assets/QrCode_Signs-Nmbrs_on_top2.jpg" alt="Question 2 QR Codes">
+        </div>
+        <div class="sign-card" data-question="3">
+            <img src="assets/QrCode_Signs-Nmbrs_on_top3.jpg" alt="Question 3 QR Codes">
+        </div>
+        <div class="sign-card" data-question="4">
+            <img src="assets/QrCode_Signs-Nmbrs_on_top4.jpg" alt="Question 4 QR Codes">
+        </div>
+        <div class="sign-card" data-question="5">
+            <img src="assets/QrCode_Signs-Nmbrs_on_top5.jpg" alt="Question 5 QR Codes">
+        </div>
+        <div class="sign-card" data-question="6">
+            <img src="assets/QrCode_Signs-Nmbrs_on_top6.jpg" alt="Question 6 QR Codes">
+        </div>
+        <div class="sign-card" data-question="7">
+            <img src="assets/QrCode_Signs-Nmbrs_on_top7.jpg" alt="Question 7 QR Codes">
+        </div>
+        <div class="sign-card" data-question="8">
+            <img src="assets/QrCode_Signs-Nmbrs_on_top8.jpg" alt="Question 8 QR Codes">
+        </div>
+        <div class="sign-card" data-question="9">
+            <img src="assets/QrCode_Signs-Nmbrs_on_top9.jpg" alt="Question 9 QR Codes">
+        </div>
+        <div class="sign-card" data-question="10">
+            <img src="assets/QrCode_Signs-Nmbrs_on_top10.jpg" alt="Question 10 QR Codes">
+        </div>
+        <div class="sign-card" data-question="11">
+            <img src="assets/QrCode_Signs-Nmbrs_on_top11.jpg" alt="Question 11 QR Codes">
+        </div>
+        <div class="sign-card" data-question="12">
+            <img src="assets/QrCode_Signs-Nmbrs_on_top12.jpg" alt="Question 12 QR Codes">
+        </div>
+    </div>
+
+    <button class="nav-arrow" onclick="changeQuestion(1)">&#10095;</button>
+</div>
+        
+        <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 2px solid #f0f0f0;">
+            <p style="color: #888;">WITTYZ - Competitive Quiz Race Game</p>
+        </div>
+    </div>
+    
+    <script>
+let currentQ = 1;
+const totalQuestions = 12;
+
+function showQuestion(num) {
+    currentQ = num;
+    
+    // Update numeric button states
+    document.querySelectorAll('.q-btn').forEach((btn, index) => {
+        btn.classList.toggle('active', index + 1 === num);
+    });
+    
+    // Show only selected image
+    document.querySelectorAll('.sign-card').forEach(card => {
+        const cardNum = parseInt(card.dataset.question);
+        card.classList.toggle('visible', cardNum === num);
+    });
+}
+
+function changeQuestion(step) {
+    let newQ = currentQ + step;
+    
+    // Loop back logic
+    if (newQ > totalQuestions) newQ = 1;
+    if (newQ < 1) newQ = totalQuestions;
+    
+    showQuestion(newQ);
+}
+
+// Initialize
+showQuestion(1);
+    </script>
+</body>
+</html>
