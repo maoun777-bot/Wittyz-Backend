@@ -1,10 +1,25 @@
 // File: netlify/functions/generate-quiz.js
+// AI Quiz Generation using Google Gemini
 
 exports.handler = async (event, context) => {
+  // Handle CORS preflight
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS'
+      },
+      body: ''
+    };
+  }
+
   // Only allow POST requests
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
+      headers: { 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify({ error: 'Method not allowed' })
     };
   }
@@ -16,97 +31,140 @@ exports.handler = async (event, context) => {
     if (!title || !language || !numQuestions || !description) {
       return {
         statusCode: 400,
+        headers: { 'Access-Control-Allow-Origin': '*' },
         body: JSON.stringify({ error: 'Missing required fields' })
       };
     }
 
-    // Optimized prompt - more concise, clearer instructions
-    const prompt = `Generate ${numQuestions} quiz questions in ${language}.
+    console.log('Generating quiz with Gemini:', { title, language, numQuestions });
 
-Topic: ${title}
-Details: ${description}
+    // Construct the prompt for Gemini
+    const prompt = `Create a quiz with exactly ${numQuestions} multiple choice questions based on the following specifications:
 
-Return ONLY a JSON array, no other text:
-[{"question":"...","answer1":"...","answer2":"...","answer3":"...","answer4":"...","correctAnswer":1}]
+Title: ${title}
+Language: ${language}
+Description: ${description}
 
-Rules:
-- Exactly ${numQuestions} questions
-- 4 answers each, one correct (1-4)
-- Randomize correct answer position
-- All text in ${language}`;
+Requirements:
+- Generate exactly ${numQuestions} questions
+- Each question must have exactly 4 answer choices
+- Mark one answer as correct (use a number 1-4)
+- The correct answer position should be randomized among the 4 choices
+- Questions should match the style and difficulty described
+- All content must be in ${language}
 
-    // Call Anthropic Claude API with streaming
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-3-5-haiku-20241022',
-        max_tokens: 4096,
-        stream: true,
-        messages: [
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        temperature: 0.4
-      })
-    });
+Return ONLY a valid JSON array with this exact structure (no markdown, no additional text, no explanation):
+[
+  {
+    "question": "Question text here",
+    "answer1": "First choice",
+    "answer2": "Second choice", 
+    "answer3": "Third choice",
+    "answer4": "Fourth choice",
+    "correctAnswer": 2
+  }
+]
 
-    if (!response.ok) {
-      const error = await response.json();
-      console.error('Claude API Error:', error);
+Important: Return ONLY the JSON array, nothing else. No markdown code blocks, no explanations.`;
+
+    // Call Google Gemini API
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      console.error('GEMINI_API_KEY not set');
       return {
-        statusCode: response.status,
-        body: JSON.stringify({ error: 'Failed to generate quiz', details: error })
+        statusCode: 500,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'API key not configured' })
       };
     }
 
-    // Process the stream and collect the full response
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let fullContent = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      const chunk = decoder.decode(value, { stream: true });
-      const lines = chunk.split('\n');
-
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const data = line.slice(6);
-          if (data === '[DONE]') continue;
-          
-          try {
-            const parsed = JSON.parse(data);
-            if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
-              fullContent += parsed.delta.text;
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: prompt
+                }
+              ]
             }
-          } catch (e) {
-            // Skip non-JSON lines
-          }
-        }
+          ],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 8192,
+            responseMimeType: "application/json"
+          },
+          safetySettings: [
+            {
+              category: "HARM_CATEGORY_HARASSMENT",
+              threshold: "BLOCK_ONLY_HIGH"
+            },
+            {
+              category: "HARM_CATEGORY_HATE_SPEECH",
+              threshold: "BLOCK_ONLY_HIGH"
+            },
+            {
+              category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+              threshold: "BLOCK_ONLY_HIGH"
+            },
+            {
+              category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+              threshold: "BLOCK_ONLY_HIGH"
+            }
+          ]
+        })
       }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Gemini API Error:', response.status, errorText);
+      return {
+        statusCode: response.status,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ 
+          error: 'Failed to generate quiz', 
+          details: errorText 
+        })
+      };
     }
 
-    // Clean up the response
-    let quizContent = fullContent.trim();
-    quizContent = quizContent.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+    const data = await response.json();
+    
+    // Extract text from Gemini's response
+    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+      console.error('Unexpected Gemini response structure:', JSON.stringify(data));
+      return {
+        statusCode: 500,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ 
+          error: 'Unexpected response from AI',
+          details: data
+        })
+      };
+    }
+
+    let quizContent = data.candidates[0].content.parts[0].text.trim();
+    console.log('Raw Gemini response:', quizContent.substring(0, 200) + '...');
+
+    // Remove markdown code blocks if present
+    quizContent = quizContent.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
 
     // Parse the JSON response
     let questions;
     try {
       questions = JSON.parse(quizContent);
     } catch (parseError) {
-      console.error('Failed to parse Claude response:', quizContent);
+      console.error('Failed to parse Gemini response:', quizContent);
       return {
         statusCode: 500,
+        headers: { 'Access-Control-Allow-Origin': '*' },
         body: JSON.stringify({ 
           error: 'Failed to parse quiz data',
           details: parseError.message,
@@ -119,9 +177,12 @@ Rules:
     if (!Array.isArray(questions) || questions.length === 0) {
       return {
         statusCode: 500,
+        headers: { 'Access-Control-Allow-Origin': '*' },
         body: JSON.stringify({ error: 'Invalid quiz format received from AI' })
       };
     }
+
+    console.log(`Successfully generated ${questions.length} questions`);
 
     // Return the generated quiz
     return {
@@ -140,6 +201,7 @@ Rules:
     console.error('Function error:', error);
     return {
       statusCode: 500,
+      headers: { 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify({ 
         error: 'Internal server error',
         message: error.message 
