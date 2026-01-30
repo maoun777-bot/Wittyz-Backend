@@ -45,11 +45,11 @@ Title: ${title}
 Language: ${language}
 Description: ${description}
 
-Requirements:
+CRITICAL Requirements:
 - Generate exactly ${numQuestions} questions
 - Each question must have exactly 4 answer choices
-- Mark one answer as correct (use a number 1-4)
-- The correct answer position should be randomized among the 4 choices
+- IMPORTANT: The correct answer position MUST be randomized - distribute correct answers roughly equally across positions 1, 2, 3, and 4. Do NOT put all correct answers in position 1.
+- Mark the correct answer with its position number (1, 2, 3, or 4)
 - Questions should match the style and difficulty described
 - All content must be in ${language}
 
@@ -65,7 +65,9 @@ Return ONLY a valid JSON array with this exact structure (no markdown, no additi
   }
 ]
 
-Important: Return ONLY the JSON array, nothing else. No markdown code blocks, no explanations.`;
+REMINDER: Randomize which answer (1, 2, 3, or 4) is correct for each question. Do not make the first answer always correct.
+
+Return ONLY the JSON array, nothing else. No markdown code blocks, no explanations.`;
 
     // Call Google Gemini API
     const apiKey = process.env.GEMINI_API_KEY;
@@ -180,6 +182,45 @@ Important: Return ONLY the JSON array, nothing else. No markdown code blocks, no
         headers: { 'Access-Control-Allow-Origin': '*' },
         body: JSON.stringify({ error: 'Invalid quiz format received from AI' })
       };
+    }
+
+    // Post-process: Randomize answer positions if they seem non-random
+    // Check if most correct answers are in the same position
+    const correctPositions = questions.map(q => q.correctAnswer);
+    const positionCounts = [0, 0, 0, 0, 0]; // index 0 unused, 1-4 for positions
+    correctPositions.forEach(pos => {
+      if (pos >= 1 && pos <= 4) positionCounts[pos]++;
+    });
+    
+    const maxCount = Math.max(...positionCounts.slice(1));
+    const threshold = questions.length * 0.6; // If 60%+ in same position, randomize
+    
+    if (maxCount > threshold) {
+      console.log('Detected non-random answer positions, shuffling...');
+      questions = questions.map(q => {
+        // Create array of answer keys and shuffle
+        const answers = [q.answer1, q.answer2, q.answer3, q.answer4];
+        const correctAnswer = answers[q.correctAnswer - 1];
+        
+        // Fisher-Yates shuffle
+        for (let i = answers.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [answers[i], answers[j]] = [answers[j], answers[i]];
+        }
+        
+        // Find new position of correct answer
+        const newCorrectPosition = answers.indexOf(correctAnswer) + 1;
+        
+        return {
+          question: q.question,
+          answer1: answers[0],
+          answer2: answers[1],
+          answer3: answers[2],
+          answer4: answers[3],
+          correctAnswer: newCorrectPosition
+        };
+      });
+      console.log('Answer positions randomized successfully');
     }
 
     console.log(`Successfully generated ${questions.length} questions`);
