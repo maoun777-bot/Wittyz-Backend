@@ -334,14 +334,14 @@
         
         <div class="section" id="betaSignupSection">
             <p style="font-size: 16px; line-height: 1.6; color: #555; margin-bottom: 20px;">
-              WITTYZ is a patent-pending physically interactive quiz game where players race between question stations, scanning their answers. The faster you move and the smarter you play, the higher your score!
-          </p>
+                WITTYZ is a patent-pending physically interactive quiz game where players race between question stations, scanning QR codes to lock in their answers. The faster you move and the smarter you play, the higher your score!
+            </p>
             
             <p style="font-size: 16px; line-height: 1.6; color: #555; margin-bottom: 30px;">
-              We are currently selecting players to test WITTYZ through Apple TestFlight. Spots are limited. If you'd like to be considered for our closed beta, please complete the form below.
-          </p>
+                We are currently inviting a select group of players to test WITTYZ through Apple TestFlight. Spots are limited. If you'd like to be considered for our closed beta, please complete the form below.
+            </p>
             
-            <div class="section-title">Beta Tester Application</div>
+            <div class="section-title">📝 Beta Tester Application</div>
             <form id="betaSignupForm" onsubmit="submitBetaApplication(event)">
                 <input type="text" id="testerName" placeholder="Full Name" required>
                 <input type="text" id="testerOccupation" placeholder="Occupation" required>
@@ -352,11 +352,11 @@
                 <button type="submit" class="btn-primary">Submit Application</button>
             </form>
             <div id="betaSignupStatus" class="status-message"></div>
-</div>
+        </div>
         
         <!-- Auth Section for Approved Testers -->
         <div class="section" id="authSection">
-            <div class="section-title">Approved Tester Login</div>
+            <div class="section-title">🔐 Approved Tester Login</div>
             <p style="font-size: 14px; color: #666; margin-bottom: 15px;">
                 If you've been approved for beta testing, create your account or sign in below.
             </p>
@@ -370,7 +370,7 @@
         
         <!-- Upload Quiz Section -->
         <div class="section">
-            <h2 class="section-title">Upload New Quiz</h2>
+            <h2 class="section-title">📚 Upload New Quiz</h2>
             <input type="text" id="quizTitle" placeholder="Enter Quiz Title">
             <div class="file-input-wrapper">
                 <input type="file" id="excelFile" accept=".xlsx,.xls">
@@ -384,7 +384,7 @@
         
         <!-- Quiz Library Section -->
         <div class="section">
-            <h2 class="section-title">Your Quiz Library</h2>
+            <h2 class="section-title">📚 Your Quiz Library</h2>
             <div id="quizLibrary"></div>
         </div>
     </div>
@@ -545,9 +545,35 @@
         async function createAccount() {
             const email = document.getElementById('emailInput').value;
             const password = document.getElementById('passwordInput').value;
+            
+            if (!email || !password) {
+                showMessage('authStatus', 'Please enter email and password', 'error');
+                return;
+            }
+            
             try {
-                await auth.createUserWithEmailAndPassword(email, password);
-                showMessage('authStatus', 'Account created successfully!', 'success');
+                // First check if email is in approved list
+                const approvedDoc = await db.collection('approvedEmails').doc(email).get();
+                
+                if (!approvedDoc.exists) {
+                    showMessage('authStatus', 'Your email has not been approved yet. Please wait for approval.', 'error');
+                    return;
+                }
+                
+                // Email is approved, create account
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                
+                // Send verification email
+                await userCredential.user.sendEmailVerification();
+                
+                showMessage('authStatus', 'Account created! Please check your email to verify your account before signing in.', 'success');
+                
+                // Sign them out until they verify
+                await auth.signOut();
+                
+                // Clear the form
+                document.getElementById('emailInput').value = '';
+                document.getElementById('passwordInput').value = '';
             } catch (error) {
                 showMessage('authStatus', error.message, 'error');
             }
@@ -556,8 +582,22 @@
         async function signIn() {
             const email = document.getElementById('emailInput').value;
             const password = document.getElementById('passwordInput').value;
+            
+            if (!email || !password) {
+                showMessage('authStatus', 'Please enter email and password', 'error');
+                return;
+            }
+            
             try {
-                await auth.signInWithEmailAndPassword(email, password);
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                
+                // Check if email is verified
+                if (!userCredential.user.emailVerified) {
+                    showMessage('authStatus', 'Please verify your email before signing in. Check your inbox for the verification link.', 'error');
+                    await auth.signOut();
+                    return;
+                }
+                
                 showMessage('authStatus', 'Signed in successfully!', 'success');
             } catch (error) {
                 showMessage('authStatus', error.message, 'error');
